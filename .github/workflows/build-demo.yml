@@ -42,6 +42,7 @@ jobs:
           update: true
           install: >-
             mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-pkgconf
           msystem: MINGW64
           location: C:\msys64
 
@@ -56,10 +57,6 @@ jobs:
           }
           $mingwBin = Split-Path $gcc.FullName
           $libPath = Split-Path $mingwBin
-          if (-not $mingwBin) {
-            Write-Error "mingw64 toolchain not found in expected locations."
-            exit 1
-          }
           echo "CC=$(Join-Path $mingwBin 'gcc.exe')" >> $env:GITHUB_ENV
           echo "CXX=$(Join-Path $mingwBin 'g++.exe')" >> $env:GITHUB_ENV
           echo "PKG_CONFIG=$(Join-Path $mingwBin 'pkg-config.exe')" >> $env:GITHUB_ENV
@@ -105,28 +102,26 @@ jobs:
           cache: true
 
       - name: Install Windows toolchain (msys2)
-        if: startsWith(matrix.os, 'windows') && matrix.tool == 'msys'
+        if: startsWith(matrix.os, 'windows')
         uses: msys2/setup-msys2@v2
         with:
           update: true
           install: >-
             mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-pkgconf
           msystem: MINGW64
           location: C:\msys64
 
       - name: Windows toolchain env (msys2)
-        if: startsWith(matrix.os, 'windows') && matrix.tool == 'msys'
+        if: startsWith(matrix.os, 'windows')
         run: |
-          $candidates = @(
-            "C:\msys64\mingw64\bin",
-            "$env:RUNNER_TEMP\msys64\mingw64\bin",
-            "$env:RUNNER_TEMP\setup-msys2\msys64\mingw64\bin"
-          )
-          $mingwBin = $candidates | Where-Object { Test-Path (Join-Path $_ 'gcc.exe') } | Select-Object -First 1
-          if (-not $mingwBin) {
-            Write-Error "mingw64 toolchain not found in expected locations."
+          $searchRoots = @("C:\msys64", "$env:RUNNER_TEMP", "D:\a\_temp")
+          $gcc = Get-ChildItem -Path $searchRoots -Recurse -Filter gcc.exe -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match 'mingw64\\bin' } | Select-Object -First 1
+          if (-not $gcc) {
+            Write-Error "mingw64 toolchain not found under $searchRoots"
             exit 1
           }
+          $mingwBin = Split-Path $gcc.FullName
           $libPath = Split-Path $mingwBin
           echo "CC=$(Join-Path $mingwBin 'gcc.exe')" >> $env:GITHUB_ENV
           echo "CXX=$(Join-Path $mingwBin 'g++.exe')" >> $env:GITHUB_ENV
