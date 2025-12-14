@@ -270,17 +270,17 @@ func Install(ctx context.Context, cfg Config) error {
 		cfg.ReleaseRepo = DefaultReleaseRepo
 	}
 
-	// Check if already installed
+	var existing *VersionInfo
 	if info, err := LoadVersionInfo(cfg.LibPath); err == nil {
+		existing = &info
 		if !cfg.AllowUpgrade {
-			return nil // Already installed, no upgrade requested
-		}
-		if cfg.Version != "" && info.Codecs["version"] == cfg.Version {
-			return nil // Same version already installed
+			if cfg.Version == "" || info.Codecs["version"] == cfg.Version {
+				return nil // already installed and no upgrade requested
+			}
 		}
 	}
 
-	// Determine version to download
+	// Check if already installed
 	version := cfg.Version
 	if version == "" {
 		var err error
@@ -288,6 +288,10 @@ func Install(ctx context.Context, cfg Config) error {
 		if err != nil {
 			return fmt.Errorf("get latest release: %w", err)
 		}
+	}
+
+	if existing != nil && existing.Codecs["version"] == version {
+		return nil // already at desired version
 	}
 
 	// Download and extract

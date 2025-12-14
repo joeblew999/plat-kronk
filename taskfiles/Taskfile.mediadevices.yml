@@ -1,0 +1,28 @@
+version: '3'
+
+vars:
+  CODEC_LIB_DIR: '{{.ROOT_DIR}}/lib/codecs'
+
+# Mediadevices demo tasks:
+# - mediadevices:demo         (no codec download; uses bundled openh264)
+# - mediadevices:demo:install (downloads codecs to CODEC_LIB_DIR and prefers them at runtime)
+tasks:
+  demo:
+    desc: Run the mediadevices demo (no codec download; uses bundled OpenH264)
+    cmds:
+      - |
+        if [ ! -d cmd/mediadevices-demo ]; then
+          echo "cmd/mediadevices-demo not found. Add the demo sources before running." >&2
+          exit 1
+        fi
+        go run ./cmd/mediadevices-demo {{.CLI_ARGS}}
+
+  demo:install:
+    desc: Run the mediadevices demo with codec download (codeccheck installer)
+    cmds:
+      - |
+        if [ ! -d cmd/mediadevices-demo ]; then
+          echo "cmd/mediadevices-demo not found. Add the demo sources before running." >&2
+          exit 1
+        fi
+        go run ./cmd/mediadevices-demo -install-codecs -upgrade -lib {{.CODEC_LIB_DIR}} {{.CLI_ARGS}}

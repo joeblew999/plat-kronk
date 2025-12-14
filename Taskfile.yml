@@ -2,9 +2,22 @@ version: '3'
 
 includes:
   codecs: ./taskfiles/Taskfile.codecs.yml
+  mediadevices: ./taskfiles/Taskfile.mediadevices.yml
 
 tasks:
   default:
     desc: Show codec tasks
     cmds:
       - task -l
+
+  demo:
+    desc: Run mediadevices demo (OpenH264 + videotest, no OS deps)
+    cmds:
+      - GOWORK=off go run ./cmd/mediadevices-demo
+
+  src:
+    dec: ensure .src and repos
+    cmds:
+      - echo ""
+      - mkdir -p .src
+      - cd ./.src && git clone https://github.com/pion/mediadevices

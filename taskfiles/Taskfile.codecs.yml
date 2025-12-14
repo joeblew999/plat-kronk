@@ -51,36 +51,6 @@ tasks:
     cmds:
       - go run ./cmd/codeccheck -help
 
-  install:darwin:
-    desc: Install codecs on macOS via Homebrew
-    platforms: [darwin]
-    cmds:
-      - |
-        echo "Installing codec dependencies for macOS..."
-        brew install x264 libvpx opus pkg-config 2>/dev/null || \
-        brew upgrade x264 libvpx opus pkg-config 2>/dev/null || true
-        echo "✅ Done. Run 'task codecs:status' to verify."
-
-  install:linux:
-    desc: Install codecs on Linux
-    platforms: [linux]
-    cmds:
-      - |
-        echo "Installing codec dependencies for Linux..."
-        if command -v apt &>/dev/null; then
-          sudo apt update && sudo apt install -y libx264-dev libvpx-dev libopus-dev pkg-config
-        elif command -v dnf &>/dev/null; then
-          sudo dnf install -y x264-devel libvpx-devel opus-devel pkgconfig
-        elif command -v pacman &>/dev/null; then
-          sudo pacman -S --noconfirm x264 libvpx opus pkg-config
-        elif command -v apk &>/dev/null; then
-          sudo apk add x264-dev libvpx-dev opus-dev pkgconfig
-        else
-          echo "❌ Unknown package manager"
-          exit 1
-        fi
-        echo "✅ Done. Run 'task codecs:status' to verify."
-
   # ============================================================================
   # ZERO-DEPENDENCY OPTION
   # ============================================================================

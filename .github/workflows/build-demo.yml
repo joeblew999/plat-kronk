@@ -1,0 +1,116 @@
+# Build mediadevices demo binaries for macOS, Linux, Windows
+name: Build Demo
+
+on:
+  workflow_dispatch: {}
+  release:
+    types: [created]
+
+jobs:
+  test:
+    name: smoke-${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: v3.37.2
+
+      - name: Smoke test demo (no download)
+        env:
+          GOWORK: off
+        run: task mediadevices:demo
+
+      - name: Smoke test demo (download/upgrade codecs)
+        env:
+          GOWORK: off
+        run: task mediadevices:demo:install
+
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            goos: darwin
+            goarch: arm64
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
+
+    runs-on: ${{ matrix.os }}
+    name: demo-${{ matrix.goos }}-${{ matrix.goarch }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build demo
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 1
+        run: |
+          go build -o dist/mediadevices-demo-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd/mediadevices-demo
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mediadevices-demo-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/mediadevices-demo-${{ matrix.goos }}-${{ matrix.goarch }}*
+
+  release:
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'release')
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Upload to release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*/mediadevices-demo-*
+          fail_on_unmatched_files: false
+
+      - name: Create release from dispatch
+        if: github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: demo-${{ github.run_id }}
+          name: Mediadevices Demo ${{ github.run_id }}
+          body: |
+            Prebuilt mediadevices demo binaries (OpenH264 + videotest; no system codecs required).
+
+            Usage:
+            - macOS/Linux: make executable and run `GOWORK=off ./mediadevices-demo-*`
+            - Windows: run `mediadevices-demo-windows-amd64.exe`
+
+            Note: Requires CGO-capable system; binaries include static OpenH264.
+          files: artifacts/*/mediadevices-demo-*
+          fail_on_unmatched_files: false
