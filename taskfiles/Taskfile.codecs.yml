@@ -1,0 +1,122 @@
+# Codec Dependencies - Go-level idempotent management
+#
+# Following the kronk/yzma pattern for automatic codec installation.
+# Users run ONE command and everything is handled.
+
+version: '3'
+
+vars:
+  CODEC_LIB_DIR: '{{.ROOT_DIR}}/lib/codecs'
+
+tasks:
+  default:
+    desc: Check codec status
+    cmds:
+      - task: status
+
+  # ============================================================================
+  # STATUS - Check what's available
+  # ============================================================================
+
+  status:
+    desc: Check codec dependencies (Go-level, idempotent)
+    cmds:
+      - go run ./cmd/codeccheck
+
+  status:json:
+    desc: Check codecs and output JSON
+    cmds:
+      - go run ./cmd/codeccheck -json
+
+  # ============================================================================
+  # INSTALL - Download pre-built codecs from GitHub releases
+  # ============================================================================
+
+  install:
+    desc: Download and install pre-built codec libraries
+    cmds:
+      - go run ./cmd/codeccheck -install -lib {{.CODEC_LIB_DIR}}
+
+  install:upgrade:
+    desc: Force upgrade codec libraries
+    cmds:
+      - go run ./cmd/codeccheck -install -lib {{.CODEC_LIB_DIR}} -upgrade
+
+  # ============================================================================
+  # MANUAL INSTALL - Per-OS package manager commands
+  # ============================================================================
+
+  install:manual:
+    desc: Show manual installation instructions
+    cmds:
+      - go run ./cmd/codeccheck -help
+
+  install:darwin:
+    desc: Install codecs on macOS via Homebrew
+    platforms: [darwin]
+    cmds:
+      - |
+        echo "Installing codec dependencies for macOS..."
+        brew install x264 libvpx opus pkg-config 2>/dev/null || \
+        brew upgrade x264 libvpx opus pkg-config 2>/dev/null || true
+        echo "✅ Done. Run 'task codecs:status' to verify."
+
+  install:linux:
+    desc: Install codecs on Linux
+    platforms: [linux]
+    cmds:
+      - |
+        echo "Installing codec dependencies for Linux..."
+        if command -v apt &>/dev/null; then
+          sudo apt update && sudo apt install -y libx264-dev libvpx-dev libopus-dev pkg-config
+        elif command -v dnf &>/dev/null; then
+          sudo dnf install -y x264-devel libvpx-devel opus-devel pkgconfig
+        elif command -v pacman &>/dev/null; then
+          sudo pacman -S --noconfirm x264 libvpx opus pkg-config
+        elif command -v apk &>/dev/null; then
+          sudo apk add x264-dev libvpx-dev opus-dev pkgconfig
+        else
+          echo "❌ Unknown package manager"
+          exit 1
+        fi
+        echo "✅ Done. Run 'task codecs:status' to verify."
+
+  # ============================================================================
+  # ZERO-DEPENDENCY OPTION
+  # ============================================================================
+
+  recommend:
+    desc: Show recommended zero-dependency approach
+    cmds:
+      - |
+        echo "╔══════════════════════════════════════════════════════════════╗"
+        echo "║         RECOMMENDED: Zero-Dependency Approach                ║"
+        echo "╚══════════════════════════════════════════════════════════════╝"
+        echo ""
+        echo "Use OpenH264 instead of x264 - it's bundled, no install needed!"
+        echo ""
+        echo "Change your import from:"
+        echo "  \"github.com/pion/mediadevices/pkg/codec/x264\""
+        echo ""
+        echo "To:"
+        echo "  \"github.com/pion/mediadevices/pkg/codec/openh264\""
+        echo ""
+        echo "That's it! No brew, apt, or any system packages required."
+
+  # ============================================================================
+  # BUILD WORKFLOW - For maintainers
+  # ============================================================================
+
+  build:trigger:
+    desc: Trigger GitHub workflow to build codec libraries
+    cmds:
+      - |
+        echo "Triggering codec build workflow..."
+        gh workflow run build-codecs.yml -f version={{.VERSION}}
+    vars:
+      VERSION: '{{default "v0.1.0" .VERSION}}'
+
+  build:status:
+    desc: Check codec build workflow status
+    cmds:
+      - gh run list --workflow=build-codecs.yml --limit=5

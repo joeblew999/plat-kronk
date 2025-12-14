@@ -1,0 +1,10 @@
+version: '3'
+
+includes:
+  codecs: ./taskfiles/Taskfile.c.yml
+
+tasks:
+  default:
+    desc: Show codec tasks
+    cmds:
+      - task -l
