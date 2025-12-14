@@ -59,7 +59,7 @@ jobs:
       - name: Smoke test demo (download/upgrade codecs)
         env:
           GOWORK: off
-        run: task mediadevices:demo:install
+        run: task mediadevices:demo:install -- -version codecs-v0.1.0
 
   build:
     strategy:
