@@ -34,18 +34,22 @@ jobs:
 
       - name: Install Windows toolchain
         if: runner.os == 'Windows'
-        run: |
-          choco install -y msys2
-          C:\tools\msys64\usr\bin\bash -lc "pacman -Sy --noconfirm --needed mingw-w64-x86_64-toolchain mingw-w64-x86_64-libssp"
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: >-
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-libssp
+          msystem: MINGW64
 
       - name: Windows toolchain env
         if: runner.os == 'Windows'
         run: |
-          echo "CC=C:\tools\msys64\mingw64\bin\gcc.exe" >> $env:GITHUB_ENV
-          echo "CXX=C:\tools\msys64\mingw64\bin\g++.exe" >> $env:GITHUB_ENV
-          echo "PKG_CONFIG=C:\tools\msys64\mingw64\bin\pkg-config.exe" >> $env:GITHUB_ENV
-          echo "CGO_LDFLAGS=-LC:/tools/msys64/mingw64/lib" >> $env:GITHUB_ENV
-          echo "PATH=C:\tools\msys64\mingw64\bin;$env:PATH" >> $env:GITHUB_ENV
+          echo "CC=C:\msys64\mingw64\bin\gcc.exe" >> $env:GITHUB_ENV
+          echo "CXX=C:\msys64\mingw64\bin\g++.exe" >> $env:GITHUB_ENV
+          echo "PKG_CONFIG=C:\msys64\mingw64\bin\pkg-config.exe" >> $env:GITHUB_ENV
+          echo "CGO_LDFLAGS=-LC:/msys64/mingw64/lib" >> $env:GITHUB_ENV
+          echo "PATH=C:\msys64\mingw64\bin;$env:PATH" >> $env:GITHUB_ENV
 
       - name: Smoke test demo (no download)
         env:
@@ -87,18 +91,22 @@ jobs:
 
       - name: Install Windows toolchain
         if: runner.os == 'Windows'
-        run: |
-          choco install -y msys2
-          C:\tools\msys64\usr\bin\bash -lc "pacman -Sy --noconfirm --needed mingw-w64-x86_64-toolchain mingw-w64-x86_64-libssp"
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: >-
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-libssp
+          msystem: MINGW64
 
       - name: Windows toolchain env
         if: runner.os == 'Windows'
         run: |
-          echo "CC=C:\tools\msys64\mingw64\bin\gcc.exe" >> $env:GITHUB_ENV
-          echo "CXX=C:\tools\msys64\mingw64\bin\g++.exe" >> $env:GITHUB_ENV
-          echo "PKG_CONFIG=C:\tools\msys64\mingw64\bin\pkg-config.exe" >> $env:GITHUB_ENV
-          echo "CGO_LDFLAGS=-LC:/tools/msys64/mingw64/lib" >> $env:GITHUB_ENV
-          echo "PATH=C:\tools\msys64\mingw64\bin;$env:PATH" >> $env:GITHUB_ENV
+          echo "CC=C:\msys64\mingw64\bin\gcc.exe" >> $env:GITHUB_ENV
+          echo "CXX=C:\msys64\mingw64\bin\g++.exe" >> $env:GITHUB_ENV
+          echo "PKG_CONFIG=C:\msys64\mingw64\bin\pkg-config.exe" >> $env:GITHUB_ENV
+          echo "CGO_LDFLAGS=-LC:/msys64/mingw64/lib" >> $env:GITHUB_ENV
+          echo "PATH=C:\msys64\mingw64\bin;$env:PATH" >> $env:GITHUB_ENV
 
       - name: Build demo
         env:
