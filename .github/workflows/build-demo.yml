@@ -39,7 +39,6 @@ jobs:
           update: true
           install: >-
             mingw-w64-x86_64-toolchain
-            mingw-w64-x86_64-libssp
           msystem: MINGW64
 
       - name: Windows toolchain env
@@ -96,7 +95,6 @@ jobs:
           update: true
           install: >-
             mingw-w64-x86_64-toolchain
-            mingw-w64-x86_64-libssp
           msystem: MINGW64
 
       - name: Windows toolchain env
