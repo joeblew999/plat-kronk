@@ -16,7 +16,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest, windows-11-arm]
+        include:
+          - os: macos-latest
+          - os: ubuntu-latest
+          - os: windows-latest
+            zig_target: x86_64-windows-gnu
+          - os: windows-11-arm
+            zig_target: aarch64-windows-gnu
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -32,32 +38,18 @@ jobs:
         with:
           version: 3.37.2
 
-      - name: Install Windows toolchain
+      - name: Setup Zig (Windows)
         if: startsWith(matrix.os, 'windows')
-        uses: msys2/setup-msys2@v2
+        uses: mlugg/setup-zig@v1
         with:
-          update: true
-          install: >-
-            mingw-w64-x86_64-toolchain
-          msystem: MINGW64
-          location: C:\msys64
+          version: 0.13.0
 
-      - name: Windows toolchain env
+      - name: Windows toolchain env (zig)
         if: startsWith(matrix.os, 'windows')
         run: |
-          $searchRoots = @("C:\msys64", "$env:RUNNER_TEMP")
-          $gcc = Get-ChildItem -Path $searchRoots -Recurse -Filter gcc.exe -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match 'mingw64\\bin' } | Select-Object -First 1
-          if (-not $gcc) {
-            Write-Error "mingw toolchain not found under $searchRoots"
-            exit 1
-          }
-          $mingwBin = Split-Path $gcc.FullName
-          $libPath = Split-Path $mingwBin
-          echo "CC=$(Join-Path $mingwBin 'gcc.exe')" >> $env:GITHUB_ENV
-          echo "CXX=$(Join-Path $mingwBin 'g++.exe')" >> $env:GITHUB_ENV
-          echo "PKG_CONFIG=$(Join-Path $mingwBin 'pkg-config.exe')" >> $env:GITHUB_ENV
-          echo "CGO_LDFLAGS=-L$libPath\.." >> $env:GITHUB_ENV
-          echo "PATH=$mingwBin;$env:PATH" >> $env:GITHUB_ENV
+          echo "CC=zig cc -target ${{ matrix.zig_target }}" >> $env:GITHUB_ENV
+          echo "CXX=zig c++ -target ${{ matrix.zig_target }}" >> $env:GITHUB_ENV
+          echo "PKG_CONFIG=" >> $env:GITHUB_ENV
 
       - name: Smoke test demo (no download)
         env:
@@ -83,9 +75,11 @@ jobs:
           - os: windows-latest
             goos: windows
             goarch: amd64
+            zig_target: x86_64-windows-gnu
           - os: windows-11-arm
             goos: windows
             goarch: arm64
+            zig_target: aarch64-windows-gnu
 
     runs-on: ${{ matrix.os }}
     name: demo-${{ matrix.goos }}-${{ matrix.goarch }}
@@ -100,32 +94,18 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Install Windows toolchain
+      - name: Setup Zig (Windows)
         if: startsWith(matrix.os, 'windows')
-        uses: msys2/setup-msys2@v2
+        uses: mlugg/setup-zig@v1
         with:
-          update: true
-          install: >-
-            mingw-w64-x86_64-toolchain
-          msystem: MINGW64
-          location: C:\msys64
+          version: 0.13.0
 
-      - name: Windows toolchain env
+      - name: Windows toolchain env (zig)
         if: startsWith(matrix.os, 'windows')
         run: |
-          $searchRoots = @("C:\msys64", "$env:RUNNER_TEMP")
-          $gcc = Get-ChildItem -Path $searchRoots -Recurse -Filter gcc.exe -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match 'mingw64\\bin' } | Select-Object -First 1
-          if (-not $gcc) {
-            Write-Error "mingw toolchain not found under $searchRoots"
-            exit 1
-          }
-          $mingwBin = Split-Path $gcc.FullName
-          $libPath = Split-Path $mingwBin
-          echo "CC=$(Join-Path $mingwBin 'gcc.exe')" >> $env:GITHUB_ENV
-          echo "CXX=$(Join-Path $mingwBin 'g++.exe')" >> $env:GITHUB_ENV
-          echo "PKG_CONFIG=$(Join-Path $mingwBin 'pkg-config.exe')" >> $env:GITHUB_ENV
-          echo "CGO_LDFLAGS=-L$libPath\.." >> $env:GITHUB_ENV
-          echo "PATH=$mingwBin;$env:PATH" >> $env:GITHUB_ENV
+          echo "CC=zig cc -target ${{ matrix.zig_target }}" >> $env:GITHUB_ENV
+          echo "CXX=zig c++ -target ${{ matrix.zig_target }}" >> $env:GITHUB_ENV
+          echo "PKG_CONFIG=" >> $env:GITHUB_ENV
 
       - name: Build demo
         env:
