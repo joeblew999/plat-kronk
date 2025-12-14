@@ -1,7 +1,7 @@
 version: '3'
 
 includes:
-  codecs: ./taskfiles/Taskfile.c.yml
+  codecs: ./taskfiles/Taskfile.codecs.yml
 
 tasks:
   default:
