@@ -50,15 +50,15 @@ jobs:
             "$env:RUNNER_TEMP\msys64\mingw64\bin",
             "$env:RUNNER_TEMP\setup-msys2\msys64\mingw64\bin"
           )
-          $mingwBin = $candidates | Where-Object { Test-Path "$_\gcc.exe" } | Select-Object -First 1
+          $mingwBin = $candidates | Where-Object { Test-Path (Join-Path $_ 'gcc.exe') } | Select-Object -First 1
           if (-not $mingwBin) {
             Write-Error "mingw64 toolchain not found in expected locations."
             exit 1
           }
           $libPath = Split-Path $mingwBin
-          echo "CC=$mingwBin\gcc.exe" >> $env:GITHUB_ENV
-          echo "CXX=$mingwBin\g++.exe" >> $env:GITHUB_ENV
-          echo "PKG_CONFIG=$mingwBin\pkg-config.exe" >> $env:GITHUB_ENV
+          echo "CC=$(Join-Path $mingwBin 'gcc.exe')" >> $env:GITHUB_ENV
+          echo "CXX=$(Join-Path $mingwBin 'g++.exe')" >> $env:GITHUB_ENV
+          echo "PKG_CONFIG=$(Join-Path $mingwBin 'pkg-config.exe')" >> $env:GITHUB_ENV
           echo "CGO_LDFLAGS=-L$libPath\.." >> $env:GITHUB_ENV
           echo "PATH=$mingwBin;$env:PATH" >> $env:GITHUB_ENV
 
@@ -121,15 +121,15 @@ jobs:
             "$env:RUNNER_TEMP\msys64\mingw64\bin",
             "$env:RUNNER_TEMP\setup-msys2\msys64\mingw64\bin"
           )
-          $mingwBin = $candidates | Where-Object { Test-Path "$_\gcc.exe" } | Select-Object -First 1
+          $mingwBin = $candidates | Where-Object { Test-Path (Join-Path $_ 'gcc.exe') } | Select-Object -First 1
           if (-not $mingwBin) {
             Write-Error "mingw64 toolchain not found in expected locations."
             exit 1
           }
           $libPath = Split-Path $mingwBin
-          echo "CC=$mingwBin\gcc.exe" >> $env:GITHUB_ENV
-          echo "CXX=$mingwBin\g++.exe" >> $env:GITHUB_ENV
-          echo "PKG_CONFIG=$mingwBin\pkg-config.exe" >> $env:GITHUB_ENV
+          echo "CC=$(Join-Path $mingwBin 'gcc.exe')" >> $env:GITHUB_ENV
+          echo "CXX=$(Join-Path $mingwBin 'g++.exe')" >> $env:GITHUB_ENV
+          echo "PKG_CONFIG=$(Join-Path $mingwBin 'pkg-config.exe')" >> $env:GITHUB_ENV
           echo "CGO_LDFLAGS=-L$libPath\.." >> $env:GITHUB_ENV
           echo "PATH=$mingwBin;$env:PATH" >> $env:GITHUB_ENV
 
