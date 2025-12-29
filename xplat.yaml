@@ -3,7 +3,7 @@ apiVersion: xplat/v1
 kind: Package
 
 name: kronk
-version: latest
+version: main
 description: WebRTC codec experiments (OpenH264, mediadevices)
 author: Gerard Webb
 license: MIT
