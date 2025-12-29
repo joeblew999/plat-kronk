@@ -1,0 +1,23 @@
+# xplat.yaml - Package manifest for xplat ecosystem
+apiVersion: xplat/v1
+kind: Package
+
+name: kronk
+version: latest
+description: WebRTC codec experiments (OpenH264, mediadevices)
+author: Gerard Webb
+license: MIT
+
+# No binary - this is a demo/experiment repo
+# binary:
+
+taskfile:
+  path: Taskfile.yml
+  namespace: kronk
+
+# No long-running processes
+
+# Build dependencies
+dependencies:
+  build:
+    - go
