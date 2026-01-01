@@ -1,0 +1,91 @@
+version: '3'
+
+vars:
+  CADDY_BIN_NAME: caddy
+  CADDY_VERSION: '{{.CADDY_VERSION | default "2.10.2"}}'
+  CADDY_BIN: '{{.TASKFILE_DIR}}/.bin'
+  CADDY_BIN_PATH: '{{.CADDY_BIN}}/{{.CADDY_BIN_NAME}}'
+  CADDY_CONFIG: '{{.CADDY_CONFIG | default "Caddyfile"}}'
+
+tasks:
+  # bin: tasks
+  bin:download:
+    desc: Download pre-built Caddy binary
+    vars:
+      GOOS:
+        sh: go env GOOS
+      GOARCH:
+        sh: go env GOARCH
+    cmds:
+      - mkdir -p {{.CADDY_BIN}}
+      - |
+        # Map Go OS/ARCH to Caddy naming (Caddy uses 'mac' instead of 'darwin')
+        OS="{{.GOOS}}"
+        ARCH="{{.GOARCH}}"
+
+        case "$OS" in
+          darwin) OS="mac" ;;
+          linux)  OS="linux" ;;
+          windows) OS="windows" ;;
+          *) echo "Unsupported OS: $OS"; exit 1 ;;
+        esac
+
+        case "$ARCH" in
+          amd64) ARCH="amd64" ;;
+          arm64) ARCH="arm64" ;;
+          arm)   ARCH="armv7" ;;
+          *) echo "Unsupported architecture: $ARCH"; exit 1 ;;
+        esac
+
+        # Download from GitHub releases
+        URL="https://github.com/caddyserver/caddy/releases/download/v{{.CADDY_VERSION}}/caddy_{{.CADDY_VERSION}}_${OS}_${ARCH}.tar.gz"
+        echo "Downloading from: $URL"
+
+        curl -L "$URL" | tar xz -C {{.CADDY_BIN}} caddy
+        chmod +x {{.CADDY_BIN_PATH}}
+
+        # Create version file
+        {
+          echo "version: v{{.CADDY_VERSION}}"
+          echo "timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "checksum: $(shasum -a 256 {{.CADDY_BIN_PATH}} | awk '{print $1}')"
+        } > {{.CADDY_BIN}}/.version
+    status:
+      - test -f {{.CADDY_BIN_PATH}}
+
+  # Service tasks (alphabetical)
+  config:version:
+    desc: Output pinned version
+    cmds:
+      - echo "v{{.CADDY_VERSION}}"
+    silent: true
+
+  ensure:
+    desc: Ensure Caddy binary exists
+    status:
+      - test -f {{.CADDY_BIN_PATH}}
+    cmds:
+      - task: bin:download
+
+  run:
+    desc: Run Caddy server
+    deps: [ensure]
+    cmds:
+      - '{{.CADDY_BIN_PATH}} run --config {{.CADDY_CONFIG}}'
+
+  stop:
+    desc: Stop Caddy server
+    deps: [ensure]
+    cmds:
+      - '{{.CADDY_BIN_PATH}} stop'
+
+  # clean: tasks
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -rf {{.CADDY_BIN}}
+
+  clean:all:
+    desc: Clean everything
+    cmds:
+      - rm -rf {{.CADDY_BIN}}

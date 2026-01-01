@@ -1,26 +1,16 @@
 version: '3'
 
 includes:
+  caddy: ./caddy/Taskfile.yml
   cloudflared: ./cloudflared/Taskfile.yml
-  codecs: ./taskfiles/Taskfile.codecs.yml
+  codecs: ./codecs/Taskfile.yml
   livekit: ./livekit/Taskfile.yml
-  mediadevices: ./taskfiles/Taskfile.mediadevices.yml
+  mediadevices: ./examples/mediadevices-demo/Taskfile.yml
+  pc: ./pc/Taskfile.yml
   webrtc: ./examples/webrtc-demo/Taskfile.yml
 
 tasks:
   default:
-    desc: Show codec tasks
+    desc: Show available tasks
     cmds:
       - task -l
-
-  demo:
-    desc: Run mediadevices demo (OpenH264 + videotest, no OS deps)
-    cmds:
-      - GOWORK=off go run ./cmd/mediadevices-demo
-
-  src:
-    dec: ensure .src and repos
-    cmds:
-      - echo ""
-      - mkdir -p .src
-      - cd ./.src && git clone https://github.com/pion/mediadevices

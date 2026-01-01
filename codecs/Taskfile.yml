@@ -20,13 +20,15 @@ tasks:
 
   status:
     desc: Check codec dependencies (Go-level, idempotent)
+    dir: '{{.TASKFILE_DIR}}'
     cmds:
-      - go run ./cmd/codeccheck
+      - go run ./codeccheck
 
   status:json:
     desc: Check codecs and output JSON
+    dir: '{{.TASKFILE_DIR}}'
     cmds:
-      - go run ./cmd/codeccheck -json
+      - go run ./codeccheck -json
 
   # ============================================================================
   # INSTALL - Download pre-built codecs from GitHub releases
@@ -34,13 +36,15 @@ tasks:
 
   install:
     desc: Download and install pre-built codec libraries
+    dir: '{{.TASKFILE_DIR}}'
     cmds:
-      - go run ./cmd/codeccheck -install -lib {{.CODEC_LIB_DIR}}
+      - go run ./codeccheck -install -lib {{.CODEC_LIB_DIR}}
 
   install:upgrade:
     desc: Force upgrade codec libraries
+    dir: '{{.TASKFILE_DIR}}'
     cmds:
-      - go run ./cmd/codeccheck -install -lib {{.CODEC_LIB_DIR}} -upgrade
+      - go run ./codeccheck -install -lib {{.CODEC_LIB_DIR}} -upgrade
 
   # ============================================================================
   # MANUAL INSTALL - Per-OS package manager commands
@@ -48,8 +52,9 @@ tasks:
 
   install:manual:
     desc: Show manual installation instructions
+    dir: '{{.TASKFILE_DIR}}'
     cmds:
-      - go run ./cmd/codeccheck -help
+      - go run ./codeccheck -help
 
   # ============================================================================
   # ZERO-DEPENDENCY OPTION

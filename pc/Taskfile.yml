@@ -1,0 +1,77 @@
+version: '3'
+
+vars:
+  PC_BIN_NAME: process-compose
+  PC_VERSION: '{{.PC_VERSION | default "v1.85.0"}}'
+  PC_BIN: '{{.TASKFILE_DIR}}/.bin'
+  PC_BIN_PATH: '{{.PC_BIN}}/{{.PC_BIN_NAME}}'
+
+tasks:
+  # bin: tasks
+  bin:download:
+    desc: Download pre-built process-compose binary
+    vars:
+      GOOS:
+        sh: go env GOOS
+      GOARCH:
+        sh: go env GOARCH
+    cmds:
+      - mkdir -p {{.PC_BIN}}
+      - |
+        # Map Go OS/ARCH to Process Compose naming
+        OS="{{.GOOS}}"
+        ARCH="{{.GOARCH}}"
+        BIN_DIR="{{.PC_BIN}}"
+        BIN_NAME="{{.PC_BIN_NAME}}"
+
+        # Process Compose uses lowercase OS names and standard ARCH
+        case "$OS" in
+          darwin) OS="darwin" ;;
+          linux)  OS="linux" ;;
+          windows) OS="windows" ;;
+          *) echo "Unsupported OS: $OS"; exit 1 ;;
+        esac
+
+        # ARCH stays as-is (amd64, arm64)
+
+        # Download from GitHub releases
+        FILE="process-compose_${OS}_${ARCH}.tar.gz"
+        URL="https://github.com/F1bonacc1/process-compose/releases/download/{{.PC_VERSION}}/$FILE"
+        echo "Downloading from: $URL"
+
+        curl -L "$URL" | tar xz -C "$BIN_DIR"
+        chmod +x "$BIN_DIR/$BIN_NAME"
+
+        # Create version file
+        {
+          echo "version: {{.PC_VERSION}}"
+          echo "timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "checksum: $(shasum -a 256 "$BIN_DIR/$BIN_NAME" | awk '{print $1}')"
+        } > "$BIN_DIR/.version"
+    status:
+      - test -f {{.PC_BIN_PATH}}
+
+  # Service tasks (alphabetical)
+  config:version:
+    desc: Output pinned version
+    cmds:
+      - echo "{{.PC_VERSION}}"
+    silent: true
+
+  ensure:
+    desc: Ensure process-compose binary exists
+    status:
+      - test -f {{.PC_BIN_PATH}}
+    cmds:
+      - task: bin:download
+
+  # clean: tasks
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -rf {{.PC_BIN}}
+
+  clean:all:
+    desc: Clean everything
+    cmds:
+      - rm -rf {{.PC_BIN}}
