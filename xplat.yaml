@@ -8,14 +8,38 @@ description: WebRTC codec experiments (OpenH264, mediadevices)
 author: Gerard Webb
 license: MIT
 
-# No binary - this is a demo/experiment repo
-# binary:
+# Subsystems provide binaries via bin:download tasks
+# Each subsystem follows CLAUDE.md conventions
 
 taskfile:
   path: Taskfile.yml
   namespace: kronk
 
-# No long-running processes
+# Subsystems that provide downloadable binaries
+subsystems:
+  caddy:
+    description: Caddy reverse proxy
+    version: 2.10.2
+    platforms: [darwin, linux, windows]
+    architectures: [amd64, arm64, armv7]
+
+  cloudflared:
+    description: Cloudflare Tunnel
+    version: latest
+    platforms: [darwin, linux, windows]
+    architectures: [amd64, arm64, arm]
+
+  livekit:
+    description: LiveKit WebRTC SFU
+    version: 1.9.9
+    platforms: [linux, windows]  # macOS builds from source
+    architectures: [amd64, arm64, armv7]
+
+  pc:
+    description: Process Compose orchestrator
+    version: 1.85.0
+    platforms: [darwin, linux, windows]
+    architectures: [amd64, arm64]
 
 # Build dependencies
 dependencies:

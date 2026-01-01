@@ -42,11 +42,19 @@ tasks:
         curl -L "$URL" | tar xz -C "$BIN_DIR"
         chmod +x "$BIN_DIR/$BIN_NAME"
 
-        # Create version file
+        # Create version file (cross-platform checksum)
+        if command -v sha256sum >/dev/null 2>&1; then
+          CHECKSUM=$(sha256sum "$BIN_DIR/$BIN_NAME" | awk '{print $1}')
+        elif command -v shasum >/dev/null 2>&1; then
+          CHECKSUM=$(shasum -a 256 "$BIN_DIR/$BIN_NAME" | awk '{print $1}')
+        else
+          CHECKSUM="unavailable"
+        fi
+
         {
           echo "version: {{.PC_VERSION}}"
           echo "timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          echo "checksum: $(shasum -a 256 "$BIN_DIR/$BIN_NAME" | awk '{print $1}')"
+          echo "checksum: $CHECKSUM"
         } > "$BIN_DIR/.version"
     status:
       - test -f {{.PC_BIN_PATH}}

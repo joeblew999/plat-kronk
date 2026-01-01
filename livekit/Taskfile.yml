@@ -46,10 +46,19 @@ tasks:
       - mkdir -p {{.LIVEKIT_BIN}}
       - cd cmd/server && go build -o {{.LIVEKIT_BIN_PATH}} .
       - |
+        # Create version file (cross-platform checksum)
+        if command -v sha256sum >/dev/null 2>&1; then
+          CHECKSUM=$(sha256sum {{.LIVEKIT_BIN_PATH}} | awk '{print $1}')
+        elif command -v shasum >/dev/null 2>&1; then
+          CHECKSUM=$(shasum -a 256 {{.LIVEKIT_BIN_PATH}} | awk '{print $1}')
+        else
+          CHECKSUM="unavailable"
+        fi
+
         {
           echo "commit: $(git rev-parse --short HEAD)"
           echo "timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          echo "checksum: $(shasum -a 256 {{.LIVEKIT_BIN_PATH}} | awk '{print $1}')"
+          echo "checksum: $CHECKSUM"
         } > {{.LIVEKIT_BIN}}/.version
 
   bin:download:
@@ -99,11 +108,19 @@ tasks:
           curl -L "$URL" | tar xz -C {{.LIVEKIT_BIN}}
         fi
 
-        # Create version file
+        # Create version file (cross-platform checksum)
+        if command -v sha256sum >/dev/null 2>&1; then
+          CHECKSUM=$(sha256sum {{.LIVEKIT_BIN_PATH}} | awk '{print $1}')
+        elif command -v shasum >/dev/null 2>&1; then
+          CHECKSUM=$(shasum -a 256 {{.LIVEKIT_BIN_PATH}} | awk '{print $1}')
+        else
+          CHECKSUM="unavailable"
+        fi
+
         {
           echo "version: {{.LIVEKIT_VERSION}}"
           echo "timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          echo "checksum: $(shasum -a 256 {{.LIVEKIT_BIN_PATH}} | awk '{print $1}')"
+          echo "checksum: $CHECKSUM"
         } > {{.LIVEKIT_BIN}}/.version
     status:
       - test -f {{.LIVEKIT_BIN_PATH}}

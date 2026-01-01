@@ -8,11 +8,13 @@
 - **PROJECT ISOLATION** - Never touch the OS; use project-level encapsulation
 - **LOCAL FIRST** - Never push to GitHub CI and pray; run `task ci` locally first
 - **SINGLE CI** - Only ever have one GitHub workflow for CI
+- **XPLAT REQUIRED** - MUST run with `xplat` from `/Users/apple/workspace/go/src/github.com/joeblew999/xplat`
 
 ### 1.2 Philosophy
 - **Task is the only interface** - DEV, USER, CI, services all use identical `task` commands
 - **Idempotency everywhere** - Every task must be safe to run repeatedly
 - **One workflow for all** - DEV builds from source, USER downloads binaries, but `task start` works for both
+- **xplat provides toolchain** - xplat bundles process-compose, task, and handles cross-platform concerns
 
 ---
 

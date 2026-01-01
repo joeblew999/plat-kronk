@@ -48,13 +48,20 @@ tasks:
           chmod +x {{.CF_BIN_PATH}}
         fi
 
-        # Create version file
+        # Create version file (cross-platform checksum)
+        CHECKSUM="unavailable"
+        if [[ -f {{.CF_BIN_PATH}} ]]; then
+          if command -v sha256sum >/dev/null 2>&1; then
+            CHECKSUM=$(sha256sum {{.CF_BIN_PATH}} | awk '{print $1}')
+          elif command -v shasum >/dev/null 2>&1; then
+            CHECKSUM=$(shasum -a 256 {{.CF_BIN_PATH}} | awk '{print $1}')
+          fi
+        fi
+
         {
           echo "version: latest"
           echo "timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          if [[ -f {{.CF_BIN_PATH}} ]]; then
-            echo "checksum: $(shasum -a 256 {{.CF_BIN_PATH}} | awk '{print $1}')"
-          fi
+          echo "checksum: $CHECKSUM"
         } > {{.CF_BIN}}/.version
     status:
       - test -f {{.CF_BIN_PATH}}

@@ -44,11 +44,19 @@ tasks:
         curl -L "$URL" | tar xz -C {{.CADDY_BIN}} caddy
         chmod +x {{.CADDY_BIN_PATH}}
 
-        # Create version file
+        # Create version file (cross-platform checksum)
+        if command -v sha256sum >/dev/null 2>&1; then
+          CHECKSUM=$(sha256sum {{.CADDY_BIN_PATH}} | awk '{print $1}')
+        elif command -v shasum >/dev/null 2>&1; then
+          CHECKSUM=$(shasum -a 256 {{.CADDY_BIN_PATH}} | awk '{print $1}')
+        else
+          CHECKSUM="unavailable"
+        fi
+
         {
           echo "version: v{{.CADDY_VERSION}}"
           echo "timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          echo "checksum: $(shasum -a 256 {{.CADDY_BIN_PATH}} | awk '{print $1}')"
+          echo "checksum: $CHECKSUM"
         } > {{.CADDY_BIN}}/.version
     status:
       - test -f {{.CADDY_BIN_PATH}}
