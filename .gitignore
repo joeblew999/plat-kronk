@@ -1,3 +1,23 @@
-# Local reference clone of mediadevices (kept outside version control)
-.src/
+# Build artifacts - all subsystems
+**/.src/
+**/.bin/
+**/.data/
+**/.version
 lib/
+
+# Recordings
+recordings/
+**/recordings/
+
+# Process Compose
+**/.pc.sock
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/

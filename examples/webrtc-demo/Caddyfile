@@ -1,0 +1,19 @@
+# Caddy config for WebRTC demo with Livekit
+# cloudflared handles HTTPS termination
+
+:8089 {
+	# Livekit WebSocket endpoint
+	handle /rtc* {
+		reverse_proxy localhost:7880
+	}
+
+	# Livekit API
+	handle /twirp/* {
+		reverse_proxy localhost:7880
+	}
+
+	# Demo app (token generation + UI)
+	handle {
+		reverse_proxy localhost:9080
+	}
+}

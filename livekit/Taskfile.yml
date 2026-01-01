@@ -1,0 +1,195 @@
+version: '3'
+
+vars:
+  LIVEKIT_BIN_NAME: livekit-server
+  LIVEKIT_UPSTREAM_REPO: https://github.com/livekit/livekit.git
+  LIVEKIT_VERSION: '{{.LIVEKIT_VERSION | default "v1.9.9"}}'
+  LIVEKIT_SRC: '{{.TASKFILE_DIR}}/.src'
+  LIVEKIT_BIN: '{{.TASKFILE_DIR}}/.bin'
+  LIVEKIT_BIN_PATH: '{{.LIVEKIT_BIN}}/{{.LIVEKIT_BIN_NAME}}'
+  LIVEKIT_DATA: '{{.TASKFILE_DIR}}/.data'
+  LIVEKIT_PORT: '{{.LIVEKIT_PORT | default "7880"}}'
+  LIVEKIT_CONFIG: '{{.TASKFILE_DIR}}/livekit.yaml'
+
+env:
+  GOWORK: off
+
+tasks:
+  # src: tasks
+  src:clone:
+    desc: Clone LiveKit upstream repository
+    cmds:
+      - git clone --branch {{.LIVEKIT_VERSION}} --depth 1 {{.LIVEKIT_UPSTREAM_REPO}} {{.LIVEKIT_SRC}}
+    status:
+      - test -d {{.LIVEKIT_SRC}}
+
+  src:update:
+    desc: Update to pinned version
+    deps: [src:clone]
+    dir: '{{.LIVEKIT_SRC}}'
+    cmds:
+      - git fetch --tags
+      - git checkout {{.LIVEKIT_VERSION}}
+
+  # bin: tasks
+  bin:build:
+    desc: Build livekit-server from source
+    deps: [src:clone]
+    dir: '{{.LIVEKIT_SRC}}'
+    sources:
+      - "**/*.go"
+      - "go.mod"
+      - "go.sum"
+    generates:
+      - "{{.LIVEKIT_BIN_PATH}}"
+    cmds:
+      - mkdir -p {{.LIVEKIT_BIN}}
+      - cd cmd/server && go build -o {{.LIVEKIT_BIN_PATH}} .
+      - |
+        {
+          echo "commit: $(git rev-parse --short HEAD)"
+          echo "timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "checksum: $(shasum -a 256 {{.LIVEKIT_BIN_PATH}} | awk '{print $1}')"
+        } > {{.LIVEKIT_BIN}}/.version
+
+  bin:download:
+    desc: Download pre-built livekit-server binary
+    vars:
+      GOOS:
+        sh: go env GOOS
+      GOARCH:
+        sh: go env GOARCH
+      VERSION:
+        sh: echo "{{.LIVEKIT_VERSION}}" | sed 's/^v//'
+    cmds:
+      - mkdir -p {{.LIVEKIT_BIN}}
+      - |
+        # LiveKit doesn't provide macOS binaries - fallback to build from source
+        if [[ "{{.GOOS}}" == "darwin" ]]; then
+          echo "LiveKit doesn't provide macOS binaries. Running bin:build instead..."
+          task bin:build
+          exit 0
+        fi
+
+        # Map GOARCH to LiveKit release names
+        ARCH="{{.GOARCH}}"
+        case "$ARCH" in
+          amd64) ARCH="amd64" ;;
+          arm64) ARCH="arm64" ;;
+          armv7) ARCH="armv7" ;;
+          *) echo "Unsupported architecture: $ARCH"; exit 1 ;;
+        esac
+
+        # Windows uses .zip, Linux uses .tar.gz
+        if [[ "{{.GOOS}}" == "windows" ]]; then
+          EXT="zip"
+        else
+          EXT="tar.gz"
+        fi
+
+        # Download from GitHub releases
+        URL="https://github.com/livekit/livekit/releases/download/{{.LIVEKIT_VERSION}}/livekit_{{.VERSION}}_{{.GOOS}}_${ARCH}.${EXT}"
+        echo "Downloading from: $URL"
+
+        if [[ "$EXT" == "zip" ]]; then
+          curl -L "$URL" -o /tmp/livekit.zip
+          unzip -o /tmp/livekit.zip -d {{.LIVEKIT_BIN}}
+          rm /tmp/livekit.zip
+        else
+          curl -L "$URL" | tar xz -C {{.LIVEKIT_BIN}}
+        fi
+
+        # Create version file
+        {
+          echo "version: {{.LIVEKIT_VERSION}}"
+          echo "timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "checksum: $(shasum -a 256 {{.LIVEKIT_BIN_PATH}} | awk '{print $1}')"
+        } > {{.LIVEKIT_BIN}}/.version
+    status:
+      - test -f {{.LIVEKIT_BIN_PATH}}
+
+  # dev: tasks
+  dev:run:
+    desc: Run livekit-server from source (development)
+    deps: [src:clone]
+    dir: '{{.LIVEKIT_SRC}}/cmd/server'
+    cmds:
+      - mkdir -p {{.LIVEKIT_DATA}}
+      - go run . --config {{.LIVEKIT_CONFIG}}
+
+  # Service tasks (alphabetical)
+  config:version:
+    desc: Output pinned version
+    cmds:
+      - echo "{{.LIVEKIT_VERSION}}"
+    silent: true
+
+  config:port:
+    desc: Output configured port
+    cmds:
+      - echo "{{.LIVEKIT_PORT}}"
+    silent: true
+
+  deps:
+    desc: Download Go dependencies
+    deps: [src:clone]
+    dir: '{{.LIVEKIT_SRC}}'
+    cmds:
+      - go mod download
+
+  ensure:
+    desc: Ensure livekit-server binary exists
+    status:
+      - test -f {{.LIVEKIT_BIN_PATH}}
+    cmds:
+      - task: bin:download
+
+  health:
+    desc: Check LiveKit health
+    cmds:
+      - curl -sf http://localhost:{{.LIVEKIT_PORT}} > /dev/null
+
+  package:
+    desc: Package livekit-server binary for release
+    vars:
+      GOOS: '{{.GOOS | default OS}}'
+      GOARCH: '{{.GOARCH | default ARCH}}'
+      DIST: '{{.DIST | default .DIST_DIR}}'
+    cmds:
+      - mkdir -p {{.DIST}}
+      - tar -czvf {{.DIST}}/{{.LIVEKIT_BIN_NAME}}-{{.GOOS}}-{{.GOARCH}}.tar.gz -C {{.LIVEKIT_BIN}} {{.LIVEKIT_BIN_NAME}}
+
+  run:
+    desc: Run livekit-server
+    deps: [ensure]
+    cmds:
+      - mkdir -p {{.LIVEKIT_DATA}}
+      - '{{.LIVEKIT_BIN_PATH}} --config {{.LIVEKIT_CONFIG}}'
+
+  test:
+    desc: Run LiveKit tests
+    deps: [src:clone]
+    dir: '{{.LIVEKIT_SRC}}'
+    cmds:
+      - go test -v ./...
+
+  # clean: tasks (alphabetical)
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -rf {{.LIVEKIT_BIN}}
+
+  clean:all:
+    desc: Clean everything
+    cmds:
+      - rm -rf {{.LIVEKIT_SRC}} {{.LIVEKIT_BIN}} {{.LIVEKIT_DATA}}
+
+  clean:data:
+    desc: Clean runtime data
+    cmds:
+      - rm -rf {{.LIVEKIT_DATA}}
+
+  clean:src:
+    desc: Clean source
+    cmds:
+      - rm -rf {{.LIVEKIT_SRC}}

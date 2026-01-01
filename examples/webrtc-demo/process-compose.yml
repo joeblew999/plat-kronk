@@ -1,0 +1,51 @@
+# WebRTC Demo with Livekit + Caddy + Cloudflare Tunnel
+# Run via: task webrtc:up
+# Architecture: Taskfile -> process-compose -> Taskfile tasks
+
+version: "0.5"
+
+# All processes run from project root so task webrtc:* works
+working_dir: ../..
+
+processes:
+  livekit:
+    command: task webrtc:livekit
+    readiness_probe:
+      http_get:
+        host: localhost
+        port: 7880
+        path: /
+      initial_delay_seconds: 2
+      period_seconds: 2
+
+  webrtc-demo:
+    command: task webrtc:demo
+    depends_on:
+      livekit:
+        condition: process_healthy
+    readiness_probe:
+      http_get:
+        host: localhost
+        port: 9080
+        path: /
+      initial_delay_seconds: 3
+      period_seconds: 2
+
+  caddy:
+    command: task webrtc:caddy
+    depends_on:
+      webrtc-demo:
+        condition: process_healthy
+    readiness_probe:
+      http_get:
+        host: localhost
+        port: 8089
+        path: /
+      initial_delay_seconds: 2
+      period_seconds: 2
+
+  tunnel:
+    command: task webrtc:tunnel
+    depends_on:
+      caddy:
+        condition: process_healthy

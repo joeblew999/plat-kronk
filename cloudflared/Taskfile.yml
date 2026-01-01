@@ -1,0 +1,89 @@
+version: '3'
+
+vars:
+  CF_BIN_NAME: cloudflared
+  CF_UPSTREAM_REPO: https://github.com/cloudflare/cloudflared.git
+  CF_VERSION: '{{.CF_VERSION | default "2025.1.2"}}'
+  CF_BIN: '{{.TASKFILE_DIR}}/.bin'
+  CF_BIN_PATH: '{{.CF_BIN}}/{{.CF_BIN_NAME}}'
+  CF_TARGET_URL: '{{.CF_TARGET_URL | default "http://localhost:8089"}}'
+
+tasks:
+  # bin: tasks
+  bin:download:
+    desc: Download pre-built cloudflared binary
+    vars:
+      GOOS:
+        sh: go env GOOS
+      GOARCH:
+        sh: go env GOARCH
+    cmds:
+      - mkdir -p {{.CF_BIN}}
+      - |
+        # Map Go OS/ARCH to Cloudflare naming
+        OS="{{.GOOS}}"
+        ARCH="{{.GOARCH}}"
+
+        case "$OS-$ARCH" in
+          darwin-amd64) FILE="cloudflared-darwin-amd64.tgz" ;;
+          darwin-arm64) FILE="cloudflared-darwin-amd64.tgz" ;; # No arm64, use Rosetta
+          linux-amd64)  FILE="cloudflared-linux-amd64" ;;
+          linux-arm64)  FILE="cloudflared-linux-arm64" ;;
+          linux-arm)    FILE="cloudflared-linux-arm" ;;
+          windows-amd64) FILE="cloudflared-windows-amd64.exe" ;;
+          *) echo "Unsupported platform: $OS-$ARCH"; exit 1 ;;
+        esac
+
+        URL="https://github.com/cloudflare/cloudflared/releases/latest/download/$FILE"
+        echo "Downloading from: $URL"
+
+        if [[ "$FILE" == *.tgz ]]; then
+          curl -L "$URL" | tar xz -C {{.CF_BIN}}
+          chmod +x {{.CF_BIN}}/cloudflared
+        elif [[ "$FILE" == *.exe ]]; then
+          curl -L "$URL" -o {{.CF_BIN}}/cloudflared.exe
+          chmod +x {{.CF_BIN}}/cloudflared.exe
+        else
+          curl -L "$URL" -o {{.CF_BIN_PATH}}
+          chmod +x {{.CF_BIN_PATH}}
+        fi
+
+        # Create version file
+        {
+          echo "version: latest"
+          echo "timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          if [[ -f {{.CF_BIN_PATH}} ]]; then
+            echo "checksum: $(shasum -a 256 {{.CF_BIN_PATH}} | awk '{print $1}')"
+          fi
+        } > {{.CF_BIN}}/.version
+    status:
+      - test -f {{.CF_BIN_PATH}}
+
+  # Service tasks (alphabetical)
+  ensure:
+    desc: Ensure cloudflared binary exists
+    status:
+      - test -f {{.CF_BIN_PATH}}
+    cmds:
+      - task: bin:download
+
+  run:
+    desc: Run cloudflared tunnel
+    deps: [ensure]
+    cmds:
+      - |
+        echo "Starting cloudflared tunnel..."
+        echo "Tunneling {{.CF_TARGET_URL}} to public HTTPS"
+        echo ""
+        {{.CF_BIN_PATH}} tunnel --url {{.CF_TARGET_URL}} 2>&1 | tee /tmp/cloudflared.log
+
+  # clean: tasks
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -rf {{.CF_BIN}}
+
+  clean:all:
+    desc: Clean everything
+    cmds:
+      - rm -rf {{.CF_BIN}}

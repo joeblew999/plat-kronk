@@ -1,0 +1,31 @@
+# LiveKit server configuration
+# https://docs.livekit.io/home/self-hosting/deployment/#configuration
+
+port: 7880
+bind_addresses:
+  - "0.0.0.0"
+
+# Development mode (uses hardcoded keys)
+# In production, you should set proper keys
+keys:
+  devkey: secret
+
+# WebRTC configuration
+rtc:
+  # Port range for UDP
+  port_range_start: 50000
+  port_range_end: 60000
+
+  # Use mDNS for local development
+  use_external_ip: false
+
+# Logging
+logging:
+  level: info
+  sample: false
+
+# Room settings
+room:
+  auto_create: true
+  empty_timeout: 300  # 5 minutes
+  max_participants: 100

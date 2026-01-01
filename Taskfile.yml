@@ -1,8 +1,11 @@
 version: '3'
 
 includes:
+  cloudflared: ./cloudflared/Taskfile.yml
   codecs: ./taskfiles/Taskfile.codecs.yml
+  livekit: ./livekit/Taskfile.yml
   mediadevices: ./taskfiles/Taskfile.mediadevices.yml
+  webrtc: ./examples/webrtc-demo/Taskfile.yml
 
 tasks:
   default:

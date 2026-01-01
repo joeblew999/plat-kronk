@@ -1,0 +1,77 @@
+version: '3'
+
+vars:
+  RECORD_DIR: '{{.TASKFILE_DIR}}/recordings'
+  DEMO_PORT: 9080
+  CADDY_PORT: 8089
+  PC_FILE: '{{.TASKFILE_DIR}}/process-compose.yml'
+  PC_SOCKET: '{{.TASKFILE_DIR}}/.pc.sock'
+  CADDY_FILE: '{{.TASKFILE_DIR}}/Caddyfile'
+  CMD_DIR: '{{.TASKFILE_DIR}}'
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task -l
+
+# Process Compose
+
+  up:
+    desc: Start all services (logs to console)
+    dir: '{{.ROOT_DIR}}'
+    cmds:
+      - process-compose -f {{.PC_FILE}} -t=false -U -u {{.PC_SOCKET}}
+
+  attach:
+    desc: Attach TUI to running services
+    dir: '{{.ROOT_DIR}}'
+    cmds:
+      - process-compose attach -U -u {{.PC_SOCKET}}
+
+  down:
+    desc: Stop all processes
+    dir: '{{.ROOT_DIR}}'
+    cmds:
+      - pkill -f "process-compose" || true
+      - pkill -f "livekit-server" || true
+      - pkill -f "webrtc-demo" || true
+      - pkill -f "cloudflared" || true
+      - caddy stop 2>/dev/null || true
+
+# Main
+
+  demo:
+    desc: Run the Livekit demo server (token generation + UI)
+    cmds:
+      - GOWORK=off go run {{.CMD_DIR}} -addr :{{.DEMO_PORT}}
+
+# Caddy 
+
+  caddy:
+    desc: Run Caddy reverse proxy
+    cmds:
+      - caddy run --config {{.CADDY_FILE}}
+
+# LiveKit
+
+  livekit:
+    desc: Run livekit-server from livekit subsystem
+    dir: '{{.ROOT_DIR}}'
+    cmds:
+      - task -d ../../../livekit run
+
+# Cloudflare Tunnel for public HTTPS
+  tunnel:
+    desc: Run cloudflared tunnel from cloudflared subsystem
+    dir: '{{.ROOT_DIR}}'
+    cmds:
+      - |
+        # Clear stale log so main.go detects the NEW tunnel URL
+        rm -f /tmp/cloudflared.log
+      - task -d ../../../cloudflared run CF_TARGET_URL=http://localhost:{{.CADDY_PORT}}
+
+  clean:
+    desc: Clean recordings
+    cmds:
+      - rm -rf {{.RECORD_DIR}}
