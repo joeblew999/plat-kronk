@@ -6,6 +6,8 @@ vars:
   CF_VERSION: '{{.CF_VERSION | default "2025.1.2"}}'
   CF_BIN: '{{.TASKFILE_DIR}}/.bin'
   CF_BIN_PATH: '{{.CF_BIN}}/{{.CF_BIN_NAME}}'
+  CF_DATA: '{{.TASKFILE_DIR}}/.data'
+  CF_LOG: '{{.CF_DATA}}/cloudflared.log'
   CF_TARGET_URL: '{{.CF_TARGET_URL | default "http://localhost:8089"}}'
 
 tasks:
@@ -78,11 +80,12 @@ tasks:
     desc: Run cloudflared tunnel
     deps: [ensure]
     cmds:
+      - mkdir -p {{.CF_DATA}}
       - |
         echo "Starting cloudflared tunnel..."
         echo "Tunneling {{.CF_TARGET_URL}} to public HTTPS"
         echo ""
-        {{.CF_BIN_PATH}} tunnel --url {{.CF_TARGET_URL}} 2>&1 | tee /tmp/cloudflared.log
+        {{.CF_BIN_PATH}} tunnel --url {{.CF_TARGET_URL}} 2>&1 | tee "{{.CF_DATA}}/cloudflared.log"
 
   # clean: tasks
   clean:
@@ -93,4 +96,9 @@ tasks:
   clean:all:
     desc: Clean everything
     cmds:
-      - rm -rf {{.CF_BIN}}
+      - rm -rf {{.CF_BIN}} {{.CF_DATA}}
+
+  clean:data:
+    desc: Clean runtime data (logs)
+    cmds:
+      - rm -rf {{.CF_DATA}}

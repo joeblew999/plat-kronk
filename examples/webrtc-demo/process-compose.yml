@@ -1,16 +1,13 @@
 # WebRTC Demo with Livekit + Caddy + Cloudflare Tunnel
-# Run via: task webrtc:up
-# Architecture: Taskfile -> process-compose -> Taskfile tasks
+# Run via: xplat task up (from examples/webrtc-demo/)
 
 version: "0.5"
 
-# NOTE: process-compose is launched from examples/webrtc-demo/ via up task
-# So ../.. resolves to project root
 working_dir: "."
 
 processes:
   livekit:
-    command: task -d ../../ livekit:run
+    command: xplat task -d ../../ livekit:run
     readiness_probe:
       http_get:
         host: localhost
@@ -20,7 +17,7 @@ processes:
       period_seconds: 2
 
   webrtc-demo:
-    command: task -d ../../examples/webrtc-demo demo
+    command: xplat task -d ../../examples/webrtc-demo demo
     depends_on:
       livekit:
         condition: process_healthy
@@ -33,7 +30,7 @@ processes:
       period_seconds: 2
 
   caddy:
-    command: task -d ../../ caddy:run CADDY_CONFIG=examples/webrtc-demo/Caddyfile
+    command: xplat task -d ../../ caddy:run CADDY_CONFIG=examples/webrtc-demo/Caddyfile
     depends_on:
       webrtc-demo:
         condition: process_healthy
@@ -46,7 +43,7 @@ processes:
       period_seconds: 2
 
   tunnel:
-    command: sh -c 'rm -f /tmp/cloudflared.log && task -d ../../ cloudflared:run CF_TARGET_URL=http://localhost:8089'
+    command: xplat task -d ../../ cloudflared:run CF_TARGET_URL=http://localhost:8089
     depends_on:
       caddy:
         condition: process_healthy

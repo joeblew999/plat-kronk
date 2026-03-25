@@ -26,12 +26,23 @@ import (
 //go:embed index.html static/*
 var content embed.FS
 
-// Livekit dev mode defaults
-const (
-	livekitAPIKey    = "devkey"
-	livekitAPISecret = "secret"
-	livekitHost      = "ws://localhost:7880"
+// Livekit configuration - defaults for dev mode
+// Override via environment variables for production:
+//   LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_HOST
+// Must match livekit/livekit.yaml
+var (
+	livekitAPIKey    = getEnvOrDefault("LIVEKIT_API_KEY", "devkey")
+	livekitAPISecret = getEnvOrDefault("LIVEKIT_API_SECRET", "n2Z2GBJV8l6Jggu85GWnID5LRmRThuYjgy2VLV8GGnKPqs26")
+	livekitHost      = getEnvOrDefault("LIVEKIT_HOST", "ws://localhost:7880")
 )
+
+// getEnvOrDefault returns the environment variable value or the default
+func getEnvOrDefault(key, defaultVal string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return defaultVal
+}
 
 var (
 	tunnelURL string
@@ -181,15 +192,19 @@ func handleToken(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleLivekitURL returns the livekit WebSocket URL
-// Through cloudflare tunnel, we use wss:// on the tunnel URL
+// Returns localhost when accessed locally, tunnel URL when accessed remotely
 func handleLivekitURL(w http.ResponseWriter, r *http.Request) {
 	tunnelMu.RLock()
 	tURL := tunnelURL
 	tunnelMu.RUnlock()
 
+	// Default to local LiveKit
 	livekitURL := livekitHost
-	if tURL != "" {
-		// Use tunnel for livekit WebSocket (wss:// through cloudflare)
+
+	// If accessed via tunnel domain (not localhost), use tunnel for LiveKit too
+	host := r.Host
+	if tURL != "" && !strings.Contains(host, "localhost") && !strings.Contains(host, "127.0.0.1") {
+		// Use tunnel for livekit WebSocket - Caddy proxies /rtc to LiveKit
 		livekitURL = strings.Replace(tURL, "https://", "wss://", 1)
 	}
 
@@ -233,7 +248,8 @@ func handleQRCode(w http.ResponseWriter, r *http.Request) {
 }
 
 func watchTunnelURL() {
-	logFile := "/tmp/cloudflared.log"
+	// Default to cloudflared/.data/cloudflared.log, can be overridden via CF_LOG env var
+	logFile := getEnvOrDefault("CF_LOG", "../../cloudflared/.data/cloudflared.log")
 	urlPattern := regexp.MustCompile(`https://[a-z0-9-]+\.trycloudflare\.com`)
 
 	for {

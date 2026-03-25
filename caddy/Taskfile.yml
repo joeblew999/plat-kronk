@@ -5,6 +5,7 @@ vars:
   CADDY_VERSION: '{{.CADDY_VERSION | default "2.10.2"}}'
   CADDY_BIN: '{{.TASKFILE_DIR}}/.bin'
   CADDY_BIN_PATH: '{{.CADDY_BIN}}/{{.CADDY_BIN_NAME}}'
+  CADDY_DATA: '{{.TASKFILE_DIR}}/.data'
   CADDY_CONFIG: '{{.CADDY_CONFIG | default "Caddyfile"}}'
 
 tasks:
@@ -96,4 +97,9 @@ tasks:
   clean:all:
     desc: Clean everything
     cmds:
-      - rm -rf {{.CADDY_BIN}}
+      - rm -rf {{.CADDY_BIN}} {{.CADDY_DATA}}
+
+  clean:data:
+    desc: Clean runtime data
+    cmds:
+      - rm -rf {{.CADDY_DATA}}

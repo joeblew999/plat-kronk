@@ -5,10 +5,10 @@ port: 7880
 bind_addresses:
   - "0.0.0.0"
 
-# Development mode (uses hardcoded keys)
-# In production, you should set proper keys
+# API keys for authentication
+# For dev mode, use hardcoded secret (must be 32+ chars)
 keys:
-  devkey: secret
+  devkey: n2Z2GBJV8l6Jggu85GWnID5LRmRThuYjgy2VLV8GGnKPqs26
 
 # WebRTC configuration
 rtc:

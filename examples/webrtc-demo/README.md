@@ -1,6 +1,6 @@
 # WebRTC Video Conference Demo
 
-Real-time video conferencing with local recording, built on pion/mediadevices.
+Real-time video conferencing with local recording, built on livekit.
 
 ## Why This Matters
 

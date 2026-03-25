@@ -2,13 +2,18 @@
 
 ## 1. Core Principles
 
+- **XPLAT REQUIRED** - MUST run with `xplat` from `/Users/apple/workspace/go/src/github.com/joeblew999/xplat` and `https://github.com/joeblew999/xplat/releases/`
+
+Xplat has Task and Process Compose already in it !! 
+
 ### 1.1 Behavior
 - **DOG FOOD** - Do it yourself, don't tell the user to do things
 - **ALWAYS RUNNING** - Keep `task start` or `task start:fg` running so you can't cheat
+- Always run your Playwright MCP to Dog Food it using the Tunnel Url !
 - **PROJECT ISOLATION** - Never touch the OS; use project-level encapsulation
 - **LOCAL FIRST** - Never push to GitHub CI and pray; run `task ci` locally first
 - **SINGLE CI** - Only ever have one GitHub workflow for CI
-- **XPLAT REQUIRED** - MUST run with `xplat` from `/Users/apple/workspace/go/src/github.com/joeblew999/xplat`
+
 
 ### 1.2 Philosophy
 - **Task is the only interface** - DEV, USER, CI, services all use identical `task` commands

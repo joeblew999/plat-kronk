@@ -177,11 +177,15 @@ tasks:
       - tar -czvf {{.DIST}}/{{.LIVEKIT_BIN_NAME}}-{{.GOOS}}-{{.GOARCH}}.tar.gz -C {{.LIVEKIT_BIN}} {{.LIVEKIT_BIN_NAME}}
 
   run:
-    desc: Run livekit-server
+    desc: Run livekit-server (uses LIVEKIT_API_KEY/SECRET from env or defaults)
     deps: [ensure]
+    vars:
+      # Default values for development - override via environment
+      API_KEY: '{{.LIVEKIT_API_KEY | default "devkey"}}'
+      API_SECRET: '{{.LIVEKIT_API_SECRET | default "n2Z2GBJV8l6Jggu85GWnID5LRmRThuYjgy2VLV8GGnKPqs26"}}'
     cmds:
       - mkdir -p {{.LIVEKIT_DATA}}
-      - '{{.LIVEKIT_BIN_PATH}} --config {{.LIVEKIT_CONFIG}}'
+      - '{{.LIVEKIT_BIN_PATH}} --config {{.LIVEKIT_CONFIG}} --keys "{{.API_KEY}}: {{.API_SECRET}}"'
 
   test:
     desc: Run LiveKit tests

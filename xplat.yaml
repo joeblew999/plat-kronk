@@ -35,12 +35,6 @@ subsystems:
     platforms: [linux, windows]  # macOS builds from source
     architectures: [amd64, arm64, armv7]
 
-  pc:
-    description: Process Compose orchestrator
-    version: 1.85.0
-    platforms: [darwin, linux, windows]
-    architectures: [amd64, arm64]
-
 # Build dependencies
 dependencies:
   build:
